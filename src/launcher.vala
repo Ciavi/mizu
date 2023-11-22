@@ -11,6 +11,7 @@ namespace Mizu {
 
             GtkLayerShell.init_for_window(this as Gtk.Window);
             GtkLayerShell.auto_exclusive_zone_enable(this);
+            GtkLayerShell.set_layer(this, Layer.OVERLAY);
             GtkLayerShell.set_margin(this, Edge.TOP, 12);
             GtkLayerShell.set_margin(this, Edge.LEFT, 12);
             GtkLayerShell.set_anchor(this, Edge.TOP, true);
@@ -34,13 +35,91 @@ namespace Mizu {
             main_container.set_hexpand(true);
             main_container.set_vexpand(true);
 
-            var app_list = new Box(Orientation.VERTICAL, 6);
+            var app_list = new ListBox();
             app_list.set_halign(Align.FILL);
             app_list.set_valign(Align.FILL);
             app_list.set_hexpand(true);
             app_list.set_vexpand(true);
 
-            foreach(DesktopApplication app in apps) {
+            var search_box = new SearchEntry();
+            search_box.insert_text.connect(() => {
+                app_list.invalidate_filter();
+                app_list.invalidate_sort();
+            });
+            search_box.delete_text.connect(() => {
+                app_list.invalidate_filter();
+                app_list.invalidate_sort();
+            });
+            search_box.activate.connect(() => {
+                app_list.invalidate_filter();
+                app_list.invalidate_sort();
+            });
+
+            update(app_list);
+            app_list.set_filter_func((a) => {
+                if(search_box.get_text() == null || search_box.get_text() == "") {
+                    return true;
+                }
+
+                var button = (Button)a.get_child();
+                var grid = (Grid)button.get_child();
+                var label = (Label)grid.get_child_at(1, 0);
+
+                var haystack = label.get_text();
+                var needle = search_box.get_text();
+
+                var query = new Fuzzier(needle);
+                
+                var match_score = query.match(haystack, 0, RegexCompileFlags.CASELESS);
+
+                apps.search<string>(haystack, (app, name) => {
+                    return app.name == name ? 1 : 0;
+                }).first().data.score = match_score;
+
+                return match_score > 0;
+            });
+            app_list.set_sort_func((a, b) => {
+                var button = (Button)a.get_child();
+                var grid = (Grid)button.get_child();
+                var label = (Label)grid.get_child_at(1, 0);
+
+                var haystack_a = label.get_text();
+                
+                button = (Button)b.get_child();
+                grid = (Grid)button.get_child();
+                label = (Label)grid.get_child_at(1, 0);
+
+                var haystack_b = label.get_text();
+
+                if(search_box.get_text() == null || search_box.get_text() == "") {
+                    return strcmp(haystack_a, haystack_b);
+                }
+
+                var score_a = apps.search<string>(haystack_a, (app, name) => {
+                    return app.name == name ? 1 : 0;
+                }).first().data.score;
+                var score_b = apps.search<string>(haystack_b, (app, name) => {
+                    return app.name == name ? 1 : 0;
+                }).first().data.score;
+
+                return score_a > score_b ? 1 : (score_a == score_b) ? 0 : -1;
+            });
+
+            var scroll_container = new ScrolledWindow(null, null);
+            scroll_container.add(app_list);
+
+            main_container.pack_start(search_box, true, true, 0);
+            main_container.pack_start(scroll_container, true, true, 0);
+            add(main_container);
+        }
+
+        private void update(ListBox list) {
+            foreach(var child in list.get_children())
+                list.remove(child);
+
+            unowned List<DesktopApplication> current = apps;
+
+            foreach(var app in current) {
                 var button = new Button();
                 
                 var grid = new Grid();
@@ -58,14 +137,10 @@ namespace Mizu {
                 button.add(grid);
                 button.clicked.connect(app.run);
 
-                app_list.pack_start(button, false, true, 0);
+                list.prepend(button);
             }
 
-            var scroll_container = new ScrolledWindow(null, null);
-            scroll_container.add(app_list);
-
-            main_container.pack_start(scroll_container, true, true, 0);
-            add(main_container);
+            list.show_all();
         }
     }
 }

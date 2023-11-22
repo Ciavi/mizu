@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 sources = [
-    'app.vala', 'launcher.vala', 'helpers.vala', utils_file
+    'app.vala', 'launcher.vala', 'helpers.vala', 'query.vala', utils_file
 ]
 
 executable('mizu', sources, dependencies: dependencies, install: true, install_dir: bindir)
