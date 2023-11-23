@@ -11,6 +11,7 @@ namespace Mizu {
 
             GtkLayerShell.init_for_window(this as Gtk.Window);
             GtkLayerShell.auto_exclusive_zone_enable(this);
+            GtkLayerShell.set_keyboard_mode(this, KeyboardMode.ON_DEMAND);
             GtkLayerShell.set_layer(this, Layer.OVERLAY);
             GtkLayerShell.set_margin(this, Edge.TOP, 12);
             GtkLayerShell.set_margin(this, Edge.LEFT, 12);
@@ -24,6 +25,9 @@ namespace Mizu {
 
         private void build() {
             apps = DesktopApplication.compose_list();
+
+            var transparent = Gdk.RGBA();
+            transparent.parse("#00000000");
 
             var main_container = new Box(Orientation.VERTICAL, 24);
             main_container.set_margin_top(24);
@@ -40,8 +44,15 @@ namespace Mizu {
             app_list.set_valign(Align.FILL);
             app_list.set_hexpand(true);
             app_list.set_vexpand(true);
+            app_list.set_selection_mode(SelectionMode.NONE);
+            app_list.override_background_color(StateFlags.NORMAL, transparent);
 
             var search_box = new SearchEntry();
+            search_box.set_halign(Align.FILL);
+            search_box.set_valign(Align.START);
+            search_box.set_hexpand(true);
+            search_box.set_vexpand(false);
+            search_box.set_placeholder_text("Search...");
             search_box.insert_text.connect(() => {
                 app_list.invalidate_filter();
                 app_list.invalidate_sort();
@@ -108,7 +119,7 @@ namespace Mizu {
             var scroll_container = new ScrolledWindow(null, null);
             scroll_container.add(app_list);
 
-            main_container.pack_start(search_box, true, true, 0);
+            main_container.pack_start(search_box, false, true, 0);
             main_container.pack_start(scroll_container, true, true, 0);
             add(main_container);
         }
@@ -119,6 +130,7 @@ namespace Mizu {
 
             unowned List<DesktopApplication> current = apps;
 
+            var counter = 1;
             foreach(var app in current) {
                 var button = new Button();
                 
@@ -128,16 +140,25 @@ namespace Mizu {
                 icon.set_from_gicon(app.icon, IconSize.DND);
 
                 var label = new Label(app.name);
+                var description = new Label(app.description);
 
                 grid.attach(icon, 0, 0, 1, 1);
                 grid.attach(label, 1, 0, 1, 1);
+                
+                if(app.description != null && app.description != "") grid.attach(description, 1, 1, 1, 1);
+
                 grid.show_all();
 
                 button.set_alignment(0, 0.5f);
                 button.add(grid);
                 button.clicked.connect(app.run);
 
+                if(counter < apps.length()) {
+                    button.set_margin_bottom(6);
+                }
+
                 list.prepend(button);
+                counter++;
             }
 
             list.show_all();

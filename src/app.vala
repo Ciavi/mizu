@@ -8,7 +8,7 @@ namespace Mizu {
             Gtk.init(ref args);
             
             launcher = new Launcher();
-            //set_style(launcher);
+            set_style(launcher);
             launcher.show_all();
 
             Gtk.main();
@@ -18,7 +18,7 @@ namespace Mizu {
             var css_provider = new CssProvider();
 
             try {
-                css_provider.load_from_path(Path.build_filename(PREFIX, DATADIR, ""));
+                css_provider.load_from_path(Path.build_filename(Environment.get_home_dir(), ".config/mizu", "style.css"));
 
                 var style_context = window.get_style_context();
                 style_context.add_provider(css_provider, STYLE_PROVIDER_PRIORITY_APPLICATION);
