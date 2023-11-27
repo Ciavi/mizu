@@ -1,0 +1,3 @@
+#: src/widgets/apps_list.vala:35
+msgid "Search..."
+msgstr "Search..."

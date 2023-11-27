@@ -1,0 +1,7 @@
+src/widgets/apps_list.vala
+src/widgets/avatar.vala
+src/widgets/power_menu.vala
+src/app.vala
+src/desktop_application.vala
+src/launcher.vala
+src/query.vala

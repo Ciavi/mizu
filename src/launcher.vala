@@ -1,3 +1,4 @@
+using Gdk;
 using GLib;
 using Gtk;
 using GtkLayerShell;
@@ -5,9 +6,15 @@ using GtkLayerShell;
 namespace Mizu {
     class Launcher : Gtk.Window {
         public List<DesktopApplication> apps;
-
+        public Json.Object settings;
+        
         public Launcher() {
-            set_size_request(480, 540);
+            settings = SETTINGS.get_object_member("general");
+
+            var l_width = settings.get_int_member_with_default("width", 480);
+            var l_height = settings.get_int_member_with_default("height", 540);
+
+            set_size_request(int.parse(l_width.to_string()), int.parse(l_height.to_string()));
 
             GtkLayerShell.init_for_window(this as Gtk.Window);
             GtkLayerShell.auto_exclusive_zone_enable(this);
@@ -18,6 +25,8 @@ namespace Mizu {
             GtkLayerShell.set_anchor(this, Edge.TOP, true);
             GtkLayerShell.set_anchor(this, Edge.LEFT, true);
 
+            register_keybinds();
+
             destroy.connect(Gtk.main_quit);
 
             build();
@@ -25,9 +34,6 @@ namespace Mizu {
 
         private void build() {
             apps = DesktopApplication.compose_list();
-
-            var transparent = Gdk.RGBA();
-            transparent.parse("#00000000");
 
             var main_container = new Box(Orientation.VERTICAL, 24);
             main_container.set_margin_top(24);
@@ -39,129 +45,26 @@ namespace Mizu {
             main_container.set_hexpand(true);
             main_container.set_vexpand(true);
 
-            var app_list = new ListBox();
-            app_list.set_halign(Align.FILL);
-            app_list.set_valign(Align.FILL);
-            app_list.set_hexpand(true);
-            app_list.set_vexpand(true);
-            app_list.set_selection_mode(SelectionMode.NONE);
-            app_list.override_background_color(StateFlags.NORMAL, transparent);
+            var power_menu = new PowerMenu();
 
-            var search_box = new SearchEntry();
-            search_box.set_halign(Align.FILL);
-            search_box.set_valign(Align.START);
-            search_box.set_hexpand(true);
-            search_box.set_vexpand(false);
-            search_box.set_placeholder_text("Search...");
-            search_box.insert_text.connect(() => {
-                app_list.invalidate_filter();
-                app_list.invalidate_sort();
-            });
-            search_box.delete_text.connect(() => {
-                app_list.invalidate_filter();
-                app_list.invalidate_sort();
-            });
-            search_box.activate.connect(() => {
-                app_list.invalidate_filter();
-                app_list.invalidate_sort();
-            });
+            var apps_list = new AppsList(apps);
+            apps_list.set_spacing(24);
 
-            update(app_list);
-            app_list.set_filter_func((a) => {
-                if(search_box.get_text() == null || search_box.get_text() == "") {
-                    return true;
-                }
-
-                var button = (Button)a.get_child();
-                var grid = (Grid)button.get_child();
-                var label = (Label)grid.get_child_at(1, 0);
-
-                var haystack = label.get_text();
-                var needle = search_box.get_text();
-
-                var query = new Fuzzier(needle);
-                
-                var match_score = query.match(haystack, 0, RegexCompileFlags.CASELESS);
-
-                apps.search<string>(haystack, (app, name) => {
-                    return app.name == name ? 1 : 0;
-                }).first().data.score = match_score;
-
-                return match_score > 0;
-            });
-            app_list.set_sort_func((a, b) => {
-                var button = (Button)a.get_child();
-                var grid = (Grid)button.get_child();
-                var label = (Label)grid.get_child_at(1, 0);
-
-                var haystack_a = label.get_text();
-                
-                button = (Button)b.get_child();
-                grid = (Grid)button.get_child();
-                label = (Label)grid.get_child_at(1, 0);
-
-                var haystack_b = label.get_text();
-
-                if(search_box.get_text() == null || search_box.get_text() == "") {
-                    return strcmp(haystack_a, haystack_b);
-                }
-
-                var score_a = apps.search<string>(haystack_a, (app, name) => {
-                    return app.name == name ? 1 : 0;
-                }).first().data.score;
-                var score_b = apps.search<string>(haystack_b, (app, name) => {
-                    return app.name == name ? 1 : 0;
-                }).first().data.score;
-
-                return score_a > score_b ? 1 : (score_a == score_b) ? 0 : -1;
-            });
-
-            var scroll_container = new ScrolledWindow(null, null);
-            scroll_container.add(app_list);
-
-            main_container.pack_start(search_box, false, true, 0);
-            main_container.pack_start(scroll_container, true, true, 0);
+            main_container.pack_start(power_menu, false, true, 0);
+            main_container.pack_start(apps_list, true, true, 0);
             add(main_container);
         }
 
-        private void update(ListBox list) {
-            foreach(var child in list.get_children())
-                list.remove(child);
-
-            unowned List<DesktopApplication> current = apps;
-
-            var counter = 1;
-            foreach(var app in current) {
-                var button = new Button();
-                
-                var grid = new Grid();
-
-                var icon = new Image();
-                icon.set_from_gicon(app.icon, IconSize.DND);
-
-                var label = new Label(app.name);
-                var description = new Label(app.description);
-
-                grid.attach(icon, 0, 0, 1, 1);
-                grid.attach(label, 1, 0, 1, 1);
-                
-                if(app.description != null && app.description != "") grid.attach(description, 1, 1, 1, 1);
-
-                grid.show_all();
-
-                button.set_alignment(0, 0.5f);
-                button.add(grid);
-                button.clicked.connect(app.run);
-
-                if(counter < apps.length()) {
-                    button.set_margin_bottom(6);
+        private void register_keybinds() {
+            add_events(EventMask.KEY_PRESS_MASK);
+            key_press_event.connect((key) => {
+                if(key.keyval == Gdk.Key.Escape) {
+                    Gtk.main_quit();
+                    return true;
                 }
 
-                list.prepend(button);
-                counter++;
-            }
-
-            list.show_all();
+                return false;
+            });
         }
     }
 }

@@ -1,7 +1,7 @@
 using GLib;
 
 namespace Mizu {
-    class DesktopApplication {
+    public class DesktopApplication {
         public string name;
         public Icon icon;
         public string command;

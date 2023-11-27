@@ -12,17 +12,19 @@ utils_file = configure_file(
 )
 
 dependencies = [
+    dependency('cairo'),
     dependency('gio-2.0'),
     dependency('gio-unix-2.0'),
     dependency('glib-2.0'),
     dependency('gobject-2.0'),
     dependency('gtk+-3.0'),
     dependency('gtk-layer-shell-0'),
+    dependency('json-glib-1.0'),
     meson.get_compiler('vala').find_library('posix')
 ]
 
 sources = [
-    'app.vala', 'launcher.vala', 'helpers.vala', 'query.vala', utils_file
+    'app.vala', 'launcher.vala', 'desktop_application.vala', 'query.vala', 'widgets/apps_list.vala', 'widgets/avatar.vala', 'widgets/power_menu.vala', utils_file
 ]
 
 executable('mizu', sources, dependencies: dependencies, install: true, install_dir: bindir)
