@@ -7,9 +7,10 @@ namespace Mizu {
         public string command;
         public string description;
         public int score;
-        
+
         public DesktopApplication(string? name, string? description, Icon? icon, string? command) {
             this.name = name;
+            this.description = description;
             this.icon = icon;
             this.command = command;
         }
@@ -31,7 +32,7 @@ namespace Mizu {
         public static List<DesktopApplication> compose_list() {
             var list = new List<DesktopApplication>();
             var apps = AppInfo.get_all();
-            
+
             foreach(AppInfo app in apps) {
                 if(!app.should_show()) continue;
 
