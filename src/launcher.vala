@@ -4,10 +4,20 @@ using Gtk;
 using GtkLayerShell;
 
 namespace Mizu {
+    class Margin {
+        public Edge edge;
+        public int margin;
+
+        public Margin(Edge edge, int margin = 0) {
+            this.edge = edge;
+            this.margin = margin;
+        }
+    }
+
     class Launcher : Gtk.Window {
         public List<DesktopApplication> apps;
         public Json.Object settings;
-        
+
         public Launcher() {
             settings = SETTINGS.get_object_member("general");
 
@@ -16,14 +26,60 @@ namespace Mizu {
 
             set_size_request(int.parse(l_width.to_string()), int.parse(l_height.to_string()));
 
+            var l_anchors = settings.get_string_member_with_default("anchors", "top left").split(" ", 4);
+            var l_margins = settings.get_string_member_with_default("margins", "0 0 0 0").split(" ", 4);
+
+            List<Edge> anchors = new List<Edge>();
+            List<Margin> margins = new List<Margin>();
+
+            foreach(var l_anchor in l_anchors) {
+                anchors.append(string_to_edge(l_anchor));
+            }
+
+            switch(l_margins.length) {
+                case 4:
+                    margins.append(new Margin(Edge.TOP, int.parse(l_margins[0])));
+                    margins.append(new Margin(Edge.RIGHT, int.parse(l_margins[1])));
+                    margins.append(new Margin(Edge.BOTTOM, int.parse(l_margins[2])));
+                    margins.append(new Margin(Edge.LEFT, int.parse(l_margins[3])));
+                    break;
+                case 3:
+                    margins.append(new Margin(Edge.TOP, int.parse(l_margins[0])));
+                    margins.append(new Margin(Edge.RIGHT, int.parse(l_margins[1])));
+                    margins.append(new Margin(Edge.BOTTOM, int.parse(l_margins[2])));
+                    margins.append(new Margin(Edge.LEFT, int.parse(l_margins[1])));
+                    break;
+                case 2:
+                    margins.append(new Margin(Edge.TOP, int.parse(l_margins[0])));
+                    margins.append(new Margin(Edge.RIGHT, int.parse(l_margins[1])));
+                    margins.append(new Margin(Edge.BOTTOM, int.parse(l_margins[0])));
+                    margins.append(new Margin(Edge.LEFT, int.parse(l_margins[1])));
+                    break;
+                case 1:
+                    margins.append(new Margin(Edge.TOP, int.parse(l_margins[0])));
+                    margins.append(new Margin(Edge.RIGHT, int.parse(l_margins[0])));
+                    margins.append(new Margin(Edge.BOTTOM, int.parse(l_margins[0])));
+                    margins.append(new Margin(Edge.LEFT, int.parse(l_margins[0])));
+                    break;
+                case 0:
+                default:
+                    margins.append(new Margin(Edge.TOP));
+                    margins.append(new Margin(Edge.LEFT));
+                    break;
+            }
+
             GtkLayerShell.init_for_window(this as Gtk.Window);
             GtkLayerShell.auto_exclusive_zone_enable(this);
             GtkLayerShell.set_keyboard_mode(this, KeyboardMode.ON_DEMAND);
             GtkLayerShell.set_layer(this, Layer.OVERLAY);
-            GtkLayerShell.set_margin(this, Edge.TOP, 12);
-            GtkLayerShell.set_margin(this, Edge.LEFT, 12);
-            GtkLayerShell.set_anchor(this, Edge.TOP, true);
-            GtkLayerShell.set_anchor(this, Edge.LEFT, true);
+
+            foreach(var anchor in anchors) {
+                GtkLayerShell.set_anchor(this, anchor, true);
+            }
+
+            foreach(var margin in margins) {
+                GtkLayerShell.set_margin(this, margin.edge, margin.margin);
+            }
 
             register_keybinds();
 
@@ -65,6 +121,20 @@ namespace Mizu {
 
                 return false;
             });
+        }
+
+        private Edge string_to_edge(string name) {
+            switch(name) {
+                case "top":
+                    return Edge.TOP;
+                case "bottom":
+                    return Edge.BOTTOM;
+                case "left":
+                default:
+                    return Edge.LEFT;
+                case "Right":
+                    return Edge.RIGHT;
+            }
         }
     }
 }
