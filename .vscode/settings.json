@@ -1,3 +1,5 @@
 {
-    "C_Cpp.default.compileCommands": "/mnt/ext/code/projects/mizu/builddir/compile_commands.json"
+    "C_Cpp.default.compileCommands": "/mnt/ext/code/projects/mizu/builddir/compile_commands.json",
+    "workbench.colorTheme": "Default Dark Modern",
+    "workbench.colorCustomizations": {}
 }

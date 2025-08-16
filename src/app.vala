@@ -8,7 +8,7 @@ namespace Mizu {
 
         public Client(string[] args) {
             Gtk.init(ref args);
-            
+
             set_settings();
             set_style();
             launcher = new Launcher();
@@ -46,7 +46,7 @@ namespace Mizu {
 
 int main(string[] args) {
     Intl.setlocale(LocaleCategory.ALL, "");
-    
+
     var langpack_dir = Path.build_filename(Mizu.PREFIX, "share", "locale");
     Intl.bindtextdomain(Mizu.PACKAGE, langpack_dir);
     Intl.bind_textdomain_codeset(Mizu.PACKAGE, "UTF-8");
