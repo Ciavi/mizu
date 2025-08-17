@@ -78,7 +78,7 @@ namespace Mizu {
             Cairo.Surface user_icon = null;
             if(File.new_for_path(face).query_exists()) {
                 try {
-                    var buf = new Pixbuf.from_file_at_scale(face, 48, 48, true);
+                    var buf = new Pixbuf.from_file_at_scale(face, 192, 192, true);
                     user_icon = Gdk.cairo_surface_create_from_pixbuf(buf, 1, null);
                 } catch(Error e){
                     stdout.printf("%s\n", e.message);
@@ -86,7 +86,7 @@ namespace Mizu {
             }
             else if(File.new_for_path(face_icon).query_exists()) {
                 try {
-                    var buf = new Pixbuf.from_file_at_scale(face_icon, 48, 48, true);
+                    var buf = new Pixbuf.from_file_at_scale(face_icon, 192, 192, true);
                     user_icon = Gdk.cairo_surface_create_from_pixbuf(buf, 1, null);
                 } catch(Error e){
                     stdout.printf("%s\n", e.message);
