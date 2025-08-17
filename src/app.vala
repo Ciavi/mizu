@@ -1,17 +1,18 @@
 using Gtk;
 
 public static Json.Object SETTINGS;
+public static string BUS_NAME;
 
 namespace Mizu {
     public class Client : Object {
         Launcher launcher;
 
-        public Client(string[] args) {
+        public Client(string[] args, uint owner_id) {
             Gtk.init(ref args);
 
             set_settings();
             set_style();
-            launcher = new Launcher();
+            launcher = new Launcher(owner_id);
             launcher.show_all();
 
             Gtk.main();
@@ -45,6 +46,8 @@ namespace Mizu {
 }
 
 int main(string[] args) {
+    BUS_NAME = "it.lichtzeit.mizu";
+
     Intl.setlocale(LocaleCategory.ALL, "");
 
     var langpack_dir = Path.build_filename(Mizu.PREFIX, "share", "locale");
@@ -52,6 +55,22 @@ int main(string[] args) {
     Intl.bind_textdomain_codeset(Mizu.PACKAGE, "UTF-8");
     Intl.textdomain(Mizu.PACKAGE);
 
-    new Mizu.Client(args);
+    uint owner_id = Bus.own_name(
+        BusType.SESSION,
+        BUS_NAME,
+        BusNameOwnerFlags.NONE,
+        (conn) => {
+            // acquired callback
+            stdout.printf("Acquired bus name %s\n", BUS_NAME);
+        },
+        () => {},
+        () => {
+            // lost callback (someone else owns it)
+            stderr.printf("Another instance is already running.\n");
+            Posix.exit(1);
+        }
+    );
+
+    new Mizu.Client(args, owner_id);
     return 0;
 }

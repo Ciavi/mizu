@@ -18,7 +18,7 @@ namespace Mizu {
         public List<DesktopApplication> apps;
         public Json.Object settings;
 
-        public Launcher() {
+        public Launcher(uint owner_id) {
             settings = SETTINGS.get_object_member("general");
 
             var l_width = settings.get_int_member_with_default("width", 480);
@@ -83,7 +83,10 @@ namespace Mizu {
 
             register_keybinds();
 
-            destroy.connect(Gtk.main_quit);
+            destroy.connect(() => {
+                Bus.unown_name(owner_id);
+                Gtk.main_quit();
+            });
 
             build();
         }
